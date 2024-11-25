@@ -3,8 +3,9 @@
   import LoadingScreen from './LoadingScreen.svelte';
   import { gsap } from 'gsap';
   import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-  gsap.registerPlugin(ScrollToPlugin);
+  gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
   let subHeading, glowingBackground;
   let loadingComplete = false;
@@ -14,29 +15,34 @@
     const timeline = gsap.timeline();
 
     // Subheading animation
-    timeline.from(subHeading, {
-      y: 50,
-      opacity: 0,
-      duration: 1,
-      ease: "power2.out",
-    });
+    if (subHeading) {
+      timeline.from(subHeading, {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        ease: "power2.out",
+      });
+    }
 
     // Subtle glowing background animation
-    gsap.to(glowingBackground, {
-      scale: 1.1,
-      opacity: 0.7,
-      duration: 3,
-      repeat: -1,
-      yoyo: true,
-      ease: "power2.inOut",
-    });
+    if (glowingBackground) {
+      gsap.to(glowingBackground, {
+        scale: 1.1,
+        opacity: 0.7,
+        duration: 3,
+        repeat: -1,
+        yoyo: true,
+        ease: "power2.inOut",
+      });
+    }
 
-    // Flickering torch logo glow
+    // Flickering torch logo glow (increased brightness)
     gsap.to(".torch-logo-glow", {
-      filter: "drop-shadow(0 0 20px rgba(255, 120, 0, 0.8))",
+      filter: "drop-shadow(0 0 50px rgba(255, 200, 0, 1))",
       duration: 1.2,
       repeat: -1,
       yoyo: true,
+      ease: "power2.inOut",
     });
   };
 
@@ -54,61 +60,51 @@
   };
 
   onMount(() => {
-  const loadingScreen = document.querySelector('.loading-screen');
-  if (loadingScreen) {
-    gsap.to(loadingScreen, {
-      opacity: 0,
-      duration: 0.8,
-      onComplete: () => {
-        loadingComplete = true;
-        startAnimations();
-      },
+    const loadingScreen = document.querySelector('.loading-screen');
+    if (loadingScreen) {
+      gsap.to(loadingScreen, {
+        opacity: 0,
+        duration: 0.8,
+        onComplete: () => {
+          loadingComplete = true;
+          startAnimations();
+        },
+      });
+    } else {
+      loadingComplete = true;
+      startAnimations();
+    }
+
+    // Animate sections on scroll
+    gsap.utils.toArray('.process-section').forEach((section) => {
+      const image = section.querySelector(".section-image");
+      const text = section.querySelector(".section-text");
+
+      gsap.fromTo(
+        [image, text],
+        { opacity: 0, y: 50 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1.5,
+          ease: "power2.out",
+          onStart: () => {
+            gsap.to(image, {
+              filter: "drop-shadow(0 0 20px rgba(255, 255, 255, 0.8))",
+              duration: 1.2,
+              yoyo: true,
+            });
+          },
+          scrollTrigger: {
+            trigger: section,
+            start: "top 80%",
+            end: "top 50%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
     });
-  }
-
-  // Animate sections on scroll
-  gsap.utils.toArray('.process-section').forEach((section) => {
-    const image = section.querySelector(".section-image");
-    const text = section.querySelector(".section-text");
-
-    // Parallax Effect for Image
-    gsap.fromTo(
-      image,
-      { opacity: 0, y: 50 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 1.5,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: section,
-          start: "top 80%",
-          end: "top 50%",
-          toggleActions: "play none none reverse",
-          scrub: true, // Enable parallax-like effect
-        },
-      }
-    );
-
-    // Text Animation
-    gsap.fromTo(
-      text,
-      { opacity: 0, y: 50 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 1.5,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: section,
-          start: "top 85%",
-          end: "top 50%",
-          toggleActions: "play none none reverse",
-        },
-      }
-    );
   });
-});
 </script>
 
 {#if !loadingComplete}
@@ -145,6 +141,7 @@
           class="glowing-dot"
           on:mouseenter={toggleBackground}
           on:mouseleave={toggleBackground}
+          on:click={toggleBackground}
         ></span>
       </h1>
 
@@ -241,7 +238,6 @@
 {/if}
 
 <style>
-  /* Hero and General Styles */
   :global(body) {
     background: black;
     color: white;
@@ -250,11 +246,6 @@
 
   .bg-glow {
     background: radial-gradient(circle at center, rgba(255, 69, 0, 0.3), rgba(0, 0, 0, 1));
-  }
-
-  .bg-hover {
-    background: url('/Heading.png') no-repeat center center fixed;
-    background-size: cover;
   }
 
   .torch-logo-glow {
@@ -291,67 +282,37 @@
     }
   }
 
-  .scroll-indicator {
-    font-size: 1rem;
+  .process-section {
+    gap: 2rem;
+    width: 100%;
   }
 
-  /* Contact Form Styles */
-  #contact {
-    background: linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(10, 10, 10, 1));
+  .content-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 80%;
   }
 
-  /* Paper-like Background */
-  .bg-paper-texture {
-    background: url('/paper-texture.png'); /* Replace with a subtle paper texture */
-    background-size: cover;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  .section-image {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.6s ease-in-out;
   }
 
-  /* Sketchy Heading */
-  .sketch-heading {
-    font-family: 'Dancing Script', cursive; /* Choose a font like a pencil sketch */
-    text-shadow: -1px -1px 0 rgba(255, 255, 255, 0.3), 2px 2px 0 rgba(0, 0, 0, 0.3);
+  .section-text {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.6s ease-in-out;
   }
 
-  /* Sketch Borders for Form */
-  .sketch-border {
-    border: 2px dashed rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
+  .process-section:hover .section-image,
+  .process-section:hover .section-text {
+    opacity: 1;
+    transform: translateY(0);
   }
 
-  /* Sketchy Input Fields */
-  .sketch-input {
-    border: 2px dashed rgba(255, 255, 255, 0.8);
-    border-radius: 10px;
-    font-family: 'Permanent Marker', cursive; /* A handwritten-like font */
-    transition: all 0.3s ease;
-    outline: none;
-  }
-
-  .sketch-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-    font-style: italic;
-  }
-
-  .sketch-input:focus {
-    border-color: rgba(255, 200, 0, 0.8);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 10px rgba(255, 200, 0, 0.6);
-  }
-
-  /* Button Styled as a Sketch Stamp */
-  .sketch-button {
-    border: 3px solid rgba(255, 255, 255, 0.8);
-    border-radius: 10px;
-    font-family: 'Permanent Marker', cursive;
-    text-shadow: -1px -1px 0 rgba(255, 255, 255, 0.3), 2px 2px 0 rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-  }
-
-  .sketch-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 200, 0, 0.8);
-    box-shadow: 0 0 15px rgba(255, 200, 0, 0.8);
-    transform: scale(1.05);
+  .font-serif {
+    font-family: 'Merriweather', serif;
   }
 </style>
