@@ -121,6 +121,7 @@
       <nav class="flex space-x-8">
         <a href="/" class="text-gray-300 hover:text-white transition">Home</a>
         <a href="/blog" class="text-gray-300 hover:text-white transition">Blog</a>
+        <a href="/login" class="text-gray-300 hover:text-white transition">Login</a>
       </nav>
     </div>
   </header>
@@ -141,7 +142,6 @@
           class="glowing-dot"
           on:mouseenter={toggleBackground}
           on:mouseleave={toggleBackground}
-          on:click={toggleBackground}
         ></span>
       </h1>
 
@@ -242,6 +242,11 @@
     background: black;
     color: white;
     transition: background-color 0.3s ease;
+  }
+
+  .bg-hover {
+    background: url('/Heading.png') no-repeat center center fixed;
+    background-size: cover;
   }
 
   .bg-glow {
